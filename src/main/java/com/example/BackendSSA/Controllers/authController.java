@@ -18,13 +18,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.BackendSSA.Dtos.DtoAuthResponse;
+import com.example.BackendSSA.Dtos.DtoEmailRequest;
 import com.example.BackendSSA.Dtos.DtoLogin;
 import com.example.BackendSSA.Dtos.DtoRegistro;
+import com.example.BackendSSA.Dtos.DtoResetPassword;
 import com.example.BackendSSA.Entities.Rol;
 import com.example.BackendSSA.Entities.Usuario;
 import com.example.BackendSSA.Repositories.RolRepository;
 import com.example.BackendSSA.Repositories.UserRepository;
 import com.example.BackendSSA.Security.JwtGenerador;
+import com.example.BackendSSA.Services.IAuthService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -36,14 +39,16 @@ public class authController {
     private UserRepository userRepository;
     private JwtGenerador jwtGenerador;
     private RolRepository rolRepository;
+    private IAuthService authService;
 
     public authController(AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder,
-    UserRepository userRepository, RolRepository rolRepository, JwtGenerador jwtGenerador) {
+    UserRepository userRepository, IAuthService authService, RolRepository rolRepository, JwtGenerador jwtGenerador) {
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.jwtGenerador = jwtGenerador;
         this.rolRepository = rolRepository;
+        this.authService = authService;
 
     }
 /* 
@@ -111,6 +116,40 @@ public class authController {
         return new ResponseEntity<>(new DtoAuthResponse(token, usuario), HttpStatus.OK);    
     
     }
+
+    //Endopoint para solicitar restablecimiento de contraseña
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> requestPasswordReset(@RequestBody DtoEmailRequest request) {
+            
+        authService.requestPasswordReset(request.getEmail());
+        
+        // Devolvemos una respuesta genérica para evitar la enumeración de usuarios.
+        return ResponseEntity.ok("Si el correo está registrado, se ha iniciado el proceso de restablecimiento.");
+    }
+    
+    // --- ENDPOINT PARA COMPLETAR EL RESTABLECIMIENTO DE CONTRASEÑA ---
+    /**
+     * Finaliza el proceso de restablecimiento. 
+     * Recibe el token y la nueva contraseña para actualizar el registro del usuario.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody DtoResetPassword request) {
+        
+        try {
+            // Llama al servicio para validar el token y actualizar la contraseña.
+            authService.resetPassword(request.getToken(), request.getNewPassword());
+            
+            return ResponseEntity.ok("Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.");
+            
+        } catch (Exception e) {
+            // Captura excepciones de negocio (ej. token inválido, expirado, usuario no encontrado)
+            return ResponseEntity
+                   .status(HttpStatus.BAD_REQUEST)
+                   .body(e.getMessage());
+        }
+    }
+
+
 
     
 }
