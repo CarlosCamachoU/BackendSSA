@@ -80,6 +80,10 @@ public class SecurityConfig {
                         // Permite acceso libre a registro 
                         .requestMatchers("/api/auth/registro").permitAll() 
 
+                        // 🟢 NUEVAS RUTAS PÚBLICAS PARA EL RESTABLECIMIENTO DE CONTRASEÑA 
+                        .requestMatchers("/api/auth/forgot-password").permitAll() // Solicitud de token
+                        .requestMatchers("/api/auth/reset-password").permitAll()  // Envío de nueva contraseña
+
                         // Permite acceso al catálogo y a las categorías
                         .requestMatchers("/api/categorias/categorias/**").permitAll() // 🛑 Nueva ruta simplificada
                         .requestMatchers("/api/productos").permitAll()

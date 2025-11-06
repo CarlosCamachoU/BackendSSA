@@ -51,6 +51,17 @@ public class Usuario {
     @Column(name = "tokenExpiryDate", columnDefinition = "TIMESTAMP")
     private LocalDateTime tokenExpiryDate;
 
+    // Constructor sin ID (usado al crear un nuevo usuario)
+    public Usuario(String nombres, String apellidos, String email, String contrasenaHash, Rol rol) {
+        this.nombres = nombres;
+        this.apellidos = apellidos;
+        this.email = email;
+        this.contrasenaHash = contrasenaHash;
+        this.rol = rol;
+        this.fechaRegistro = LocalDateTime.now();
+        this.esActivo = true;
+    }  
+
 
 
 
