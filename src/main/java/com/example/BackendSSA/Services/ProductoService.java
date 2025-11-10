@@ -69,7 +69,6 @@ public class ProductoService {
                 producto.getCategoria() != null ? producto.getCategoria().getNombre() : null, 
                 producto.getPrecioBase(),
                 producto.getStockActual(),
-                producto.getCalificacionPromedio(),
                 producto.getNumeroResenas(),
                 producto.getImagenPrincipalUrl(),
                 atributosMap
@@ -110,7 +109,6 @@ public class ProductoService {
         String nombreUsuario = resena.getUsuario() != null ? resena.getUsuario().getNombres() : "Usuario Anónimo";
         
         return new DtoResena(
-                resena.getCalificacion(),
                 resena.getComentario(),
                 resena.getFechaCreacion(),
                 nombreUsuario

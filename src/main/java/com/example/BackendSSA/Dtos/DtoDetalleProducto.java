@@ -44,8 +44,7 @@ public class DtoDetalleProducto {
     // Constructor de mapeo (Usado en el Servicio para convertir la Entidad a DTO)
     public DtoDetalleProducto(
         Integer idProducto, String sku, String nombre, String descripcion, String marca, 
-        String categoria, BigDecimal precioBase, Integer stockActual, BigDecimal calificacionPromedio, 
-        Integer numeroResenas, String imagenPrincipalUrl, Map<String, Object> atributos
+        String categoria, BigDecimal precioBase, Integer stockActual, String imagenPrincipalUrl, Map<String, Object> atributos
     ) {
         this.idProducto = idProducto;
         this.sku = sku;
@@ -56,8 +55,6 @@ public class DtoDetalleProducto {
         this.categoria = categoria; 
         this.precioBase = precioBase;
         this.stockActual = stockActual;
-        this.calificacionPromedio = calificacionPromedio;
-        this.numeroResenas = numeroResenas;
         this.imagenPrincipalUrl = imagenPrincipalUrl;
         this.atributos = atributos;
     }
