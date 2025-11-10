@@ -87,6 +87,7 @@ public class SecurityConfig {
                         // Permite acceso al catálogo y a las categorías
                         .requestMatchers("/api/categorias/categorias/**").permitAll() // 🛑 Nueva ruta simplificada
                         .requestMatchers("/api/productos").permitAll()
+                        .requestMatchers("/api/productos/**").permitAll()
 
                         
                         // Rutas de administración d

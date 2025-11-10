@@ -1,6 +1,7 @@
 package com.example.BackendSSA.Entities;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class ProductoEntities {
     // Relación con Categoría (asumiendo que tienes una entidad Categoria)
     @Column(name = "idcategoria") // 🛑 Mapea la columna idcategoria
     private Long idCategoria;
+
     @ManyToOne
     @JoinColumn(name = "idcategoria", nullable = false, insertable = false, updatable = false)
     private CategoriaEntities categoria;
@@ -43,5 +45,20 @@ public class ProductoEntities {
     @Column(name="marca", length = 100, nullable = true)
     private String marca;
 
+    @Column(name = "sku", unique = true, length = 50)
+    private String sku;
+
+    @Column(name = "imagen_principal_url", nullable = false, length = 255)
+    private String imagenPrincipalUrl;
+
+
+    // Mapeo del campo JSON de MySQL a un String en Java
+    @Column(name = "atributos_json", columnDefinition = "JSON")
+    private String atributosJson;
+
+
+    private List<ResenaEntities> resenas;
+    
+    
     
 }

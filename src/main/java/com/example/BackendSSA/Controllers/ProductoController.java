@@ -7,23 +7,34 @@ import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.data.domain.Page;
 //import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.BackendSSA.Dtos.DtoDetalleProducto;
 import com.example.BackendSSA.Entities.ProductoEntities;
 import com.example.BackendSSA.Repositories.ProductoRepository;
+import com.example.BackendSSA.Services.ProductoService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 
 @RestController
 @RequestMapping("/api/productos")
 public class ProductoController {
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+    private final ProductoService productoService;
+
+   @Autowired
+    public ProductoController(ProductoRepository productoRepository, ProductoService productoService) {
+        this.productoRepository = productoRepository;
+        this.productoService = productoService;
+    }
 
     @GetMapping
     public ResponseEntity<List<ProductoEntities>> getAllProductos(
@@ -85,6 +96,21 @@ public class ProductoController {
 
        // return ResponseEntity.ok(productosList);
 
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getProductoDetalle(@PathVariable Integer id) {
+        try {
+            DtoDetalleProducto detalle = productoService.getProductoDetalle(id);
+            return ResponseEntity.ok(detalle);
+        } catch (EntityNotFoundException e) {
+            // Retorna 404 Not Found si el producto no existe
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // Retorna 500 Internal Server Error para otros problemas
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Error al obtener el detalle del producto: " + e.getMessage());
+        }
     }
 
 
