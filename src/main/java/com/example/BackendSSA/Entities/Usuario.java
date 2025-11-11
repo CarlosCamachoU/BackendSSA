@@ -2,10 +2,14 @@ package com.example.BackendSSA.Entities;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 
 @Entity
@@ -13,6 +17,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = {"preferencias"}) 
+@EqualsAndHashCode(callSuper = false, exclude = {"preferencias"})
 public class Usuario {
      
     @Id
@@ -50,6 +56,18 @@ public class Usuario {
 
     @Column(name = "tokenExpiryDate", columnDefinition = "TIMESTAMP")
     private LocalDateTime tokenExpiryDate;
+
+    // NOTA: Se usan 'NULL' en la DB (por el script SQL) para no afectar usuarios existentes
+    @Column(name = "telefono", length = 20)
+    private String telefono; 
+    
+    @Column(name = "fechaNacimiento", columnDefinition = "DATE") 
+    private LocalDateTime fechaNacimiento; 
+    
+    // RELACIÓN ONE-TO-ONE CON PREFERENCIAS
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore // Crucial: Evita la serialización circular con la entidad Preferencias
+    private PreferenciasEntities preferencias;
 
     // Constructor sin ID (usado al crear un nuevo usuario)
     public Usuario(String nombres, String apellidos, String email, String contrasenaHash, Rol rol) {
