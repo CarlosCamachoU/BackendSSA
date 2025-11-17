@@ -22,7 +22,13 @@ public class DtoPerfil {
     // Se usa LocalDateTime, aunque en la DB sea DATE, para flexibilidad en la capa de Java.
     private LocalDateTime fechaNacimiento;
 
+    private String direccionCalle;
+    private String direccionCiudad;
+    private String direccionEstado;
+
     // Campo de solo lectura para información de rol
     private String rol;
+
+    
     
 }
