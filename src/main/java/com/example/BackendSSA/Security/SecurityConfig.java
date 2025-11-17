@@ -79,8 +79,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/productos/*/resena").authenticated()
                         //.requestMatchers("/api/productos/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT,"/api/perfil").permitAll()
-                        .requestMatchers(HttpMethod.PUT,"api/preferencias").permitAll()
+                        //.requestMatchers(HttpMethod.PUT,"/api/perfil").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/perfil").authenticated()
+                        .requestMatchers(HttpMethod.PUT,"/api/perfil").authenticated()
+                        //.requestMatchers(HttpMethod.PUT,"api/preferencias").permitAll()
+                        .requestMatchers(HttpMethod.PUT,"/api/preferencias").authenticated()
 
 
 

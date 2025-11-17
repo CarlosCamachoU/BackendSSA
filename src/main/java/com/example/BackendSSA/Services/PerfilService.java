@@ -1,12 +1,9 @@
 package com.example.BackendSSA.Services;
 
 import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import com.example.BackendSSA.Dtos.DtoPerfil;
-
 import com.example.BackendSSA.Entities.Usuario;
 import com.example.BackendSSA.Repositories.UserRepository;
 import org.springframework.transaction.annotation.Transactional; 
@@ -33,7 +30,6 @@ public class PerfilService {
         if (usuarioOpt.isEmpty()) {
             throw new RuntimeException("Usuario no encontrado con ID: " + idUsuario);
         }
-
         Usuario usuario = usuarioOpt.get();
 
         DtoPerfil dto = new DtoPerfil();
@@ -41,6 +37,10 @@ public class PerfilService {
         dto.setApellidos(usuario.getApellidos());
         dto.setEmail(usuario.getEmail());
         dto.setTelefono(usuario.getTelefono());
+
+        dto.setDireccionCalle(usuario.getDireccionCalle());
+        dto.setDireccionCiudad(usuario.getDireccionCiudad());
+        dto.setDireccionEstado(usuario.getDireccionEstado());
         
         // Mapeo directo de LocalDate de la entidad a LocalDateTime del DTO
         // Aunque solo almacenamos la fecha, usamos LocalDateTime en el DTO por flexibilidad.
@@ -53,8 +53,6 @@ public class PerfilService {
         } else {
              dto.setRol("NO ASIGNADO");
         }
-    
-
         return dto;
     }
 
@@ -83,6 +81,10 @@ public class PerfilService {
         // CORRECCIÓN 3: La entidad Usuario usa LocalDateTime, 
         // por lo que asignamos el LocalDateTime del DTO directamente.
         usuario.setFechaNacimiento(dtoPerfil.getFechaNacimiento());
+
+        usuario.setDireccionCalle(dtoPerfil.getDireccionCalle());
+        usuario.setDireccionCiudad(dtoPerfil.getDireccionCiudad());
+        usuario.setDireccionEstado(dtoPerfil.getDireccionEstado());
         
         // NOTA: El Rol y la Contraseña no se modifican desde este DTO,
         // y 'profesion' se maneja en el servicio de preferencias.

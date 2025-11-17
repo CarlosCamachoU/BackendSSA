@@ -1,16 +1,13 @@
 package com.example.BackendSSA.Entities;
 
 import java.time.LocalDateTime;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
 
 @Entity
 @Table(name = "Usuario")
@@ -64,6 +61,15 @@ public class Usuario {
     @Column(name = "fechaNacimiento", columnDefinition = "DATE") 
     private LocalDateTime fechaNacimiento; 
     
+    @Column(name = "direccion_calle", length = 255)
+    private String direccionCalle;
+    
+    @Column(name = "direccion_ciudad",  length = 255)
+    private String direccionCiudad;
+    
+    @Column(name = "direccion_estado",  length = 255)
+    private String direccionEstado;
+    
     // RELACIÓN ONE-TO-ONE CON PREFERENCIAS
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore // Crucial: Evita la serialización circular con la entidad Preferencias
@@ -79,10 +85,4 @@ public class Usuario {
         this.fechaRegistro = LocalDateTime.now();
         this.esActivo = true;
     }  
-
-
-
-
-
-
 }
