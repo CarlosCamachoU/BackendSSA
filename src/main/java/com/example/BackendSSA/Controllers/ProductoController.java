@@ -3,11 +3,14 @@ package com.example.BackendSSA.Controllers;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +23,9 @@ import com.example.BackendSSA.Dtos.DtoDetalleProducto;
 import com.example.BackendSSA.Dtos.DtoProducto;
 import com.example.BackendSSA.Dtos.DtoResena;
 import com.example.BackendSSA.Entities.ProductoEntities;
+import com.example.BackendSSA.Entities.Usuario;
 import com.example.BackendSSA.Repositories.ProductoRepository;
+import com.example.BackendSSA.Repositories.UserRepository;
 import com.example.BackendSSA.Services.ProductoService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -31,11 +36,48 @@ import jakarta.persistence.criteria.Predicate;
 public class ProductoController {
     private final ProductoRepository productoRepository;
     private final ProductoService productoService;
+    private final UserRepository userRepository;
 
    @Autowired
-    public ProductoController(ProductoRepository productoRepository, ProductoService productoService) {
+    public ProductoController(ProductoRepository productoRepository, ProductoService productoService, UserRepository userRepository) {
         this.productoRepository = productoRepository;
         this.productoService = productoService;
+        this.userRepository = userRepository;
+    }
+
+
+    /**
+     * Obtiene los productos personalizados para el usuario logueado.
+     * La lista está ordenada por score de relevancia.
+     */
+    @GetMapping("/personalizados")
+    public ResponseEntity<List<DtoProducto>> getPersonalizedProducts(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        if (userDetails == null) {
+            // Esto no debería pasar si el endpoint está bien configurado con Spring Security
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            // 1. Obtener el ID del usuario
+            String email = userDetails.getUsername();
+            Usuario usuario = userRepository.findByemail(email) // Asumo findByEmail existe y es tu método de búsqueda
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario logueado no encontrado con email: " + email));
+            
+            Integer userId = usuario.getIdUsuario(); // Tu campo es Integer
+            
+            // 2. Llamar al servicio para obtener la lista personalizada
+            List<DtoProducto> personalizedProducts = productoService.getProductosPersonalizados(userId);
+            
+            return ResponseEntity.ok(personalizedProducts);
+
+        } catch (EntityNotFoundException e) {
+            // Si el usuario no existe (o sus preferencias, manejado en el service)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     
@@ -153,7 +195,7 @@ public class ProductoController {
 
 
 
-     @GetMapping("/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<?> getProductoDetalle(@PathVariable Integer id) {
         try {
             DtoDetalleProducto detalle = productoService.getProductoDetalle(id);
@@ -223,6 +265,55 @@ public class ProductoController {
     }
 
 
+    @GetMapping("/ofertas")
+    public ResponseEntity<List<DtoProducto>> getProductosEnOferta() {
+        try {
+            List<ProductoEntities> entities = productoRepository.findProductosEnOferta();
+            
+            List<DtoProducto> dtos = entities.stream()
+                .map(DtoProducto::fromEntity)
+                .collect(Collectors.toList());
+            
+        
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    
+    }
+
+
+    @GetMapping("/buscar")
+    public ResponseEntity<List<DtoProducto>> buscarProductos(
+        @RequestParam("query") String query,
+        @RequestParam(value = "limit", defaultValue = "5") int limit) {
+            
+            try {
+            // Página 0, tamaño = limit (por defecto 5 productos máximo)
+                Pageable pageable = PageRequest.of(0, limit);
+
+            // Usamos tu método ya existente en el repositorio
+            List<ProductoEntities> entities = productoRepository.buscarPorCriterioEnCampos(query, pageable);
+
+            // Mapear a DTO
+             List<DtoProducto> dtos = entities.stream()
+             .map(DtoProducto::fromEntity)
+             .collect(Collectors.toList());
+
+             return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            e.printStackTrace();
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+  
+}
+
+
+
+
+
 
     /* 
     @GetMapping
@@ -241,8 +332,3 @@ public class ProductoController {
         }
     }
     */
-
-
-
-    
-}

@@ -1,6 +1,7 @@
 package com.example.BackendSSA.Dtos;
 
 import java.math.BigDecimal;
+//import java.math.BigDecimal;
 import java.util.List;
 
 import lombok.Data;
@@ -16,6 +17,7 @@ public class DtoDetalleProducto {
     private Integer stockActual;    
     private String categoria;
     private String descripcionCompleta;
+    private String urlImagen;
 
     //private String urlImagen; // Campo asumido para el frontend
 

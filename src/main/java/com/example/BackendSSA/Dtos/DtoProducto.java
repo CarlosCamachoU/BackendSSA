@@ -16,6 +16,9 @@ public class DtoProducto {
     private Integer idproducto;
     private String nombre;
     private BigDecimal precioBase;
+    private String Descripcion;
+    private Integer score;
+    private String imagenUrl;
    // private String imagenUrl; // Asumo que este campo existe en ProductoEntities
 
     /**
@@ -28,7 +31,10 @@ public class DtoProducto {
             // Utilizamos el getter de la Entidad
             entity.getIdProducto(), 
             entity.getNombre(), 
-            entity.getPrecioBase()
+            entity.getPrecioBase(),
+            entity.getDescripcion(),
+            null,
+            entity.getImagenUrl()
             // Esto asume que tienes un getter getImagenUrl() en ProductoEntities
             //entity.getImagenUrl() 
         );

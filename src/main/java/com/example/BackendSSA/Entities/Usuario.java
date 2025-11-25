@@ -1,6 +1,8 @@
 package com.example.BackendSSA.Entities;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -69,11 +71,20 @@ public class Usuario {
     
     @Column(name = "direccion_estado",  length = 255)
     private String direccionEstado;
+
+    // Este campo mapea a la nueva columna 'perfil_completo' en la BD
+    @Column(name = "perfilcompleto", nullable = false)
+    private boolean perfilCompleto;
     
     // RELACIÓN ONE-TO-ONE CON PREFERENCIAS
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore // Crucial: Evita la serialización circular con la entidad Preferencias
     private PreferenciasEntities preferencias;
+
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<FavoritosEntities> favoritos;
 
     // Constructor sin ID (usado al crear un nuevo usuario)
     public Usuario(String nombres, String apellidos, String email, String contrasenaHash, Rol rol) {

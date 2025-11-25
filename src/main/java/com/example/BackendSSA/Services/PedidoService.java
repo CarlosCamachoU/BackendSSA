@@ -4,18 +4,20 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import jakarta.persistence.EntityNotFoundException;
 
 import com.example.BackendSSA.Dtos.DtoDetallePedido;
+import com.example.BackendSSA.Dtos.DtoDetallePedidoRespuesta;
 import com.example.BackendSSA.Dtos.DtoPedido;
+import com.example.BackendSSA.Dtos.DtoPedidoRespuesta;
 import com.example.BackendSSA.Entities.DetallePedidoEntities;
 import com.example.BackendSSA.Entities.EstadoEntities;
 import com.example.BackendSSA.Entities.PedidoEntities;
@@ -35,122 +37,152 @@ public class PedidoService {
     private final EstadoRepository estadoRepository;
 
     @Autowired
-    public PedidoService(PedidoRepository pedidoRepository, UserRepository userRepository, ProductoRepository productoRepository, EstadoRepository estadoRepository){
+    public PedidoService(
+            PedidoRepository pedidoRepository,
+            UserRepository userRepository,
+            ProductoRepository productoRepository,
+            EstadoRepository estadoRepository) {
         this.pedidoRepository = pedidoRepository;
         this.userRepository = userRepository;
         this.productoRepository = productoRepository;
         this.estadoRepository = estadoRepository;
     }
 
-    /**
-     * Crea y persiste un nuevo PedidoEntity, obteniendo el usuario autenticado de Spring Security.
-     * El idUsuario NO se recibe en el DTO, se extrae del contexto de seguridad.
-     * @param request El DTO con los datos del pedido (sin idUsuario).
-     * @return La entidad PedidoEntity guardada con su ID.
-     * @throws ResourceNotFoundException si el producto o estado inicial no existen.
-     * @throws UsernameNotFoundException si el usuario autenticado no existe en la base de datos.
-     */
+    // ---------------- EXISTENTE: crear pedido (flujo anterior) ----------------
+
     @Transactional
     public PedidoEntities crearPedido(DtoPedido request) {
-        
-        // 1. OBTENER EL USUARIO AUTENTICADO DE SPRING SECURITY
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // Asumiendo que el "principal" (name) de la autenticación es el email o username
         String email = authentication.getName();
-        
-        // Buscar la entidad Usuario completa por el username (asumiendo que es el email o login)
-        Usuario usuario = userRepository.findByemail(email) 
-            .orElseThrow(() -> new EntityNotFoundException("Usuario logueado no encontrado: " + email));
-        
-        // 2. Obtener Estado Inicial y Validar Existencia
-        
-        // Obtener Estado Inicial (Asumimos que existe un estado "PENDIENTE")
+
+        Usuario usuario = userRepository.findByemail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario logueado no encontrado: " + email));
+
         EstadoEntities estadoInicial = estadoRepository.findByNombreEstado("PENDIENTE")
-                .orElseThrow(() -> new EntityNotFoundException("Estado inicial 'PENDIENTE' no encontrado en la base de datos."));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Estado inicial 'PENDIENTE' no encontrado en la base de datos."));
 
-
-        
-
-
-        // 3. Mapear y configurar PedidoEntity (Encabezado)
         PedidoEntities pedido = new PedidoEntities();
-        pedido.setUsuario(usuario); // Asignación de la Entidad Usuario (segura desde Security)
-        pedido.setEstado(estadoInicial); // Asignación de la Entidad Estado
+        pedido.setUsuario(usuario);
+        pedido.setEstado(estadoInicial);
         pedido.setDireccionEnvio(request.getDireccionEnvio());
         pedido.setFechaPedido(LocalDateTime.now());
-        pedido.setCulqiToken(request.getCulquitoken());
+        pedido.setDni(request.getDni());
+        pedido.setMetodoPago(request.getMetodoPago());
+        pedido.setIdTransaccionCulqi(request.getIdTransaccionCulqi()); // o culqi / stripe según tu DTO
+
+        // 🔹 Aquí calculas el número de pedido por cliente
+        long pedidosPrevios = pedidoRepository.countByUsuario_IdUsuario(usuario.getIdUsuario());
+        int numeroPedidoCliente = (int) pedidosPrevios + 1;
+        pedido.setNumeroPedidoCliente(numeroPedidoCliente);
         
         List<DetallePedidoEntities> detallesGuardados = new ArrayList<>();
         BigDecimal totalPedido = BigDecimal.ZERO;
 
-        // 4. Procesar los Detalles del Pedido (Cuerpo)
-        
-        for (DtoDetallePedido DtoDetallePedido : request.getDetalles()) {
-            
-            // Buscar el Producto para validar su existencia y obtener el precio real
-            ProductoEntities producto = productoRepository.findById(DtoDetallePedido.getIdProducto())
-                    .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con ID: " + DtoDetallePedido.getIdProducto()));
+        for (DtoDetallePedido dtoDetallePedido : request.getDetalles()) {
 
+            ProductoEntities producto = productoRepository.findById(dtoDetallePedido.getIdProducto())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Producto no encontrado con ID: " + dtoDetallePedido.getIdProducto()));
 
-            // *** VALIDACIÓN DE STOCK ***
-            if (producto.getStockActual() < DtoDetallePedido.getCantidad()) {
-                 throw new RuntimeException("Stock insuficiente. El producto '" + producto.getNombre() + "' solo tiene " + producto.getStockActual() + " unidades.");
+            if (producto.getStockActual() < dtoDetallePedido.getCantidad()) {
+                throw new RuntimeException("Stock insuficiente. El producto '" + producto.getNombre()
+                        + "' solo tiene " + producto.getStockActual() + " unidades.");
             }
 
-            // Crear DetallePedidoEntity
             DetallePedidoEntities detalle = new DetallePedidoEntities();
-            
-            // Establecer las relaciones ManyToOne
             detalle.setPedido(pedido);
             detalle.setProducto(producto);
-            
-            detalle.setCantidad(DtoDetallePedido.getCantidad());
-            
-            // Usar el precio de la base de datos (Entidad Producto) por seguridad
-            BigDecimal precioUnitario = producto.getPrecioBase(); 
+            detalle.setCantidad(dtoDetallePedido.getCantidad());
+
+            BigDecimal precioUnitario = producto.getPrecioBase();
             detalle.setPrecioUnitarioCompra(precioUnitario);
 
-            // Actualizar el total del pedido
-            BigDecimal subTotalDetalle = precioUnitario.multiply(BigDecimal.valueOf(DtoDetallePedido.getCantidad()));
+            BigDecimal subTotalDetalle = precioUnitario
+                    .multiply(BigDecimal.valueOf(dtoDetallePedido.getCantidad()));
             totalPedido = totalPedido.add(subTotalDetalle);
 
             detallesGuardados.add(detalle);
 
-            // *** DESCONTAR STOCK Y PERSISTIR ***
-            producto.setStockActual(producto.getStockActual() - DtoDetallePedido.getCantidad());
+            producto.setStockActual(producto.getStockActual() - dtoDetallePedido.getCantidad());
             productoRepository.save(producto);
         }
 
-        // 5. Finalizar Pedido y Persistir
-        
         pedido.setTotal(totalPedido);
         pedido.setDetalles(detallesGuardados);
 
-        // Se guarda el Pedido y, por la configuración de cascada, también los Detalles.
         PedidoEntities pedidoGuardado = pedidoRepository.save(pedido);
-        
-        // 6. Mapear a DTO de salida (si tu controlador lo requiere)
-        // Aquí asumiremos que se retorna la entidad PedidoEntity completa, o podrías crear un PedidoResponseDTO si lo prefieres.
         return pedidoGuardado;
     }
-    
-    /**
-     * Busca un pedido por ID.
-     * @param idPedido El ID del pedido a buscar.
-     * @return La entidad PedidoEntity.
-     * @throws ResourceNotFoundException si el pedido no es encontrado.
-     */
+
     @Transactional(readOnly = true)
     public PedidoEntities buscarPedidoPorId(Integer idPedido) {
         return pedidoRepository.findById(idPedido)
                 .orElseThrow(() -> new EntityNotFoundException("Pedido no encontrado con ID: " + idPedido));
     }
 
-    
+    // ---------- NUEVO: mapper para usar en historial / respuesta -----------
 
+    private DtoPedidoRespuesta mapearPedidoADto(PedidoEntities pedido) {
+        DtoPedidoRespuesta dto = new DtoPedidoRespuesta();
+        dto.setIdPedido(pedido.getIdPedido());
+        dto.setNumeroPedidoCliente(pedido.getNumeroPedidoCliente());
+        dto.setFechaPedido(pedido.getFechaPedido());
+        dto.setTotal(pedido.getTotal());
+        dto.setDireccionEnvio(pedido.getDireccionEnvio());
+        dto.setDni(pedido.getDni());
+        dto.setMetodoPago(pedido.getMetodoPago());
+        dto.setIdTransaccion(pedido.getIdTransaccionCulqi());
 
+        List<DtoDetallePedidoRespuesta> detallesDto = pedido.getDetalles().stream().map(det -> {
+            DtoDetallePedidoRespuesta d = new DtoDetallePedidoRespuesta();
+            d.setIdProducto(det.getProducto().getIdProducto());
+            d.setNombreProducto(det.getProducto().getNombre());
+            d.setCantidad(det.getCantidad());
+            d.setPrecioUnitario(det.getPrecioUnitarioCompra());
+            return d;
+        }).collect(Collectors.toList());
 
+        dto.setDetalles(detallesDto);
+        return dto;
+    }
 
-    
+    // ---------- NUEVO: listar historial de pedidos del usuario logueado ----------
+
+    @Transactional(readOnly = true)
+    public List<DtoPedidoRespuesta> listarPedidosUsuarioActual() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Usuario usuario = userRepository.findByemail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario logueado no encontrado: " + email));
+
+        List<PedidoEntities> pedidos = pedidoRepository
+                .findByUsuario_IdUsuarioOrderByFechaPedidoDesc(usuario.getIdUsuario());
+
+        return pedidos.stream()
+                .map(this::mapearPedidoADto)
+                .collect(Collectors.toList());
+    }
+
+    // ---------- NUEVO: obtener detalle de un pedido específico del usuario ----------
+
+    @Transactional(readOnly = true)
+    public DtoPedidoRespuesta obtenerPedidoUsuarioActualPorId(Integer idPedido) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Usuario usuario = userRepository.findByemail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario logueado no encontrado: " + email));
+
+        PedidoEntities pedido = pedidoRepository
+                .findByIdPedidoAndUsuario_IdUsuario(idPedido, usuario.getIdUsuario())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Pedido no encontrado o no pertenece al usuario actual. ID: " + idPedido));
+
+        return mapearPedidoADto(pedido);
+    }
 }

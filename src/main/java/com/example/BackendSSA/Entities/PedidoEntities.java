@@ -24,42 +24,46 @@ public class PedidoEntities {
     @Column(name="idpedido")
     private Integer idPedido;
 
-    // Relación ManyToOne con UsuarioEntity (FK: idusuario)
-    // Un pedido pertenece a un solo usuario.
+    // Relación ManyToOne con Usuario (FK: idusuario)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idusuario", referencedColumnName = "idusuario", nullable = false)
     private Usuario usuario; 
     
-    // Relación ManyToOne con EstadoEntity (FK: idestado)
-    // Indica el estado actual del pedido.
+    // Relación ManyToOne con EstadoEntities (FK: idestado)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idestado", referencedColumnName = "idestado", nullable = false)
     @JsonBackReference
     private EstadoEntities estado; 
 
-    @Column(name= "fechapedido", columnDefinition = "TIMESTAMP", nullable = false)
+    @Column(name = "fechapedido", columnDefinition = "TIMESTAMP", nullable = false)
     private LocalDateTime fechaPedido;
 
-    @Column(name= "total", precision = 10, scale = 2, nullable = false)
+    @Column(name = "total", precision = 10, scale = 2, nullable = false)
     private BigDecimal total;
 
-    @Column(name= "direccionenvio", columnDefinition = "TEXT", nullable = false)
+    // Dirección de envío congelada al momento del pedido
+    @Column(name = "direccionenvio", columnDefinition = "TEXT", nullable = false)
     private String direccionEnvio;
 
-    // NUEVO CAMPO PARA ALMACENAR EL TOKEN DE CULQI
-    @Column(name = "culqi_token", length = 255)
-    private String culqiToken;
+    // DNI usado en este pedido (no necesariamente el mismo que quede luego en el perfil)
+    @Column(name = "dni", length = 15)
+    private String dni;
 
-    // Relación OneToMany con DetallePedidoEntity
-    // Mapea la lista de productos de este pedido.
+    // Método de pago (ej: TARJETA_CULQI, EFECTIVO, YAPE, etc.)
+    @Column(name = "metodopago", length = 30, nullable = false)
+    private String metodoPago;
+
+    // ID de la transacción en Culqi (NO es el token del front, es el chargeId)
+    @Column(name = "idtransaccionculqi", length = 255)
+    private String idTransaccionCulqi;
+
+    @Column(name = "numeroPedidoCliente")
+    private Integer numeroPedidoCliente;
+
+
+    // Relación OneToMany con DetallePedidoEntities
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<DetallePedidoEntities> detalles;
 
-
-
-
-
-
-    
 }
