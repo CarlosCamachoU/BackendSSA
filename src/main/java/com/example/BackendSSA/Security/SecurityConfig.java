@@ -79,11 +79,21 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/productos/*/resena").authenticated()
                         //.requestMatchers("/api/productos/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                        //.requestMatchers(HttpMethod.PUT,"/api/perfil").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/perfil").authenticated()
                         .requestMatchers(HttpMethod.PUT,"/api/perfil").authenticated()
-                        //.requestMatchers(HttpMethod.PUT,"api/preferencias").permitAll()
                         .requestMatchers(HttpMethod.PUT,"/api/preferencias").authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/api/favoritos").authenticated() // Obtener lista de favoritos
+                        .requestMatchers(HttpMethod.POST, "/api/favoritos").authenticated() // Añadir/Eliminar favorito (toggle)
+                        .requestMatchers("/api/payments/**").authenticated()
+                        .requestMatchers("/api/checkout/stripe/**").authenticated()
+
+                        
+                        .requestMatchers("/api/pedidos/mis-pedidos/**").authenticated()
+                        .requestMatchers("/api/pedidos/**").permitAll()
+
+                        // Si tuvieras un DELETE /api/favoritos/{idProducto} específico:
+                        // .requestMatchers(HttpMethod.DELETE, "/api/favoritos/**").authenticated()
 
 
 

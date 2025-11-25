@@ -1,7 +1,10 @@
 package com.example.BackendSSA.Entities;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -70,13 +73,30 @@ public class ProductoEntities {
     @Column(name = "profesion", length = 255, nullable = true)
     private String profesion;
 
+    @Column(name = "enOferta")
+    private Boolean enOferta;
+
+    @Column(name = "precioOferta")
+    private BigDecimal precioOferta;
+
+    @Column(name = "fechaInicioOferta")
+    private LocalDate fechaInicioOferta;
+
+    @Column(name = "fechaFinOferta")
+    private LocalDate fechaFinOferta;
+
     //crear una ruta para la imagen.
     // Si necesitas una columna para la URL de la imagen:
-    // @Column(name = "imagen_url", length = 500, nullable = true)
-    // private String imagenUrl;    
+    @Column(name = "imagenUrl", length = 500, nullable = true)
+    private String imagenUrl;    
     
     @OneToMany(mappedBy = "producto", fetch = FetchType.LAZY)
     private List<ResenaEntities> resenas;
+    
+    @JsonIgnore
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FavoritosEntities> usuariosFavorito; // Puedes nombrar esta lista como prefieras
+
 
 
     

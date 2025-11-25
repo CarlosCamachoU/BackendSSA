@@ -109,6 +109,9 @@ public class PreferenciasService {
             // 5. Persistir (UPDATE)
             preferencias = preferenciasRepository.save(preferencias);
         }
+
+        usuario.setPerfilCompleto(true);
+        userRepository.save(usuario);
         
         return mapearADto(preferencias);
     }

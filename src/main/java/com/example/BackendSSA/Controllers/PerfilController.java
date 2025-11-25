@@ -1,5 +1,8 @@
 package com.example.BackendSSA.Controllers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +29,7 @@ public class PerfilController {
 
     /**
      * Método auxiliar para obtener el ID del usuario autenticado.
-     */
+     
     private Integer getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         // El getName() generalmente devuelve el 'principal', que en JWT es el email (username)
@@ -35,8 +38,45 @@ public class PerfilController {
         Usuario usuario = userRepository.findByemail(email)
                                         .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado en DB."));
         return usuario.getIdUsuario();
+    }*/
+
+        
+
+    private Usuario getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName(); 
+        
+        // Busca y devuelve la entidad de usuario
+        return userRepository.findByemail(email)
+                             .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado en DB."));
     }
 
+
+    // --- NUEVO ENDPOINT ---
+    /**
+     * Devuelve el estado de la bandera de personalización del perfil del usuario autenticado.
+     * URL: GET /api/perfil/estado
+     */
+    @GetMapping("/estado")
+    public ResponseEntity<Map<String, Boolean>> obtenerEstadoPerfil() {
+        try {
+            Usuario usuario = getAuthenticatedUser();
+            
+            // Creamos un mapa para devolver la bandera en formato JSON
+            Map<String, Boolean> estado = new HashMap<>();
+            // El nombre de la clave "perfilCompleto" debe coincidir con el esperado en el frontend
+            estado.put("perfilCompleto", usuario.isPerfilCompleto()); 
+            
+            return new ResponseEntity<>(estado, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            // Manejo de error si el usuario no es encontrado (debería ser raro si está autenticado)
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); 
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    
     /**
      * Obtiene los datos del perfil del usuario autenticado.
      * URL: GET /api/perfil
@@ -44,7 +84,7 @@ public class PerfilController {
     @GetMapping
     public ResponseEntity<?> obtenerPerfil() {
         try {
-            Integer idUsuario = getAuthenticatedUserId();
+            Integer idUsuario = getAuthenticatedUser().getIdUsuario();
             DtoPerfil perfil = perfilService.obtenerPerfil(idUsuario);
             return new ResponseEntity<>(perfil, HttpStatus.OK);
         } catch (RuntimeException e) {
@@ -55,6 +95,8 @@ public class PerfilController {
         }
     }
 
+    
+
     /**
      * Actualiza los datos del perfil del usuario autenticado.
      * URL: PUT /api/perfil
@@ -62,7 +104,11 @@ public class PerfilController {
     @PutMapping
     public ResponseEntity<?> actualizarPerfil(@RequestBody DtoPerfil request) {
         try {
-            Integer idUsuario = getAuthenticatedUserId();
+            //Integer idUsuario = getAuthenticatedUserId();
+
+            Usuario usuario = getAuthenticatedUser();
+            Integer idUsuario = usuario.getIdUsuario();
+
 
             // Llama al servicio para actualizar los datos
             perfilService.actualizarPerfil(idUsuario, request);
