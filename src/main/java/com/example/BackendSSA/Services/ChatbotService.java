@@ -43,6 +43,9 @@ public class ChatbotService {
      */
     public String chat(String message) {
         try {
+            if (apiKey == null || apiKey.isBlank()) {
+                return "Error de configuracion: falta la variable GROQ_API_KEY en el backend.";
+            }
             // 0) Detectar si el usuario está preguntando por PROMOCIONES / OFERTAS
             boolean esConsultaPromos = isPromotionsQuery(message);
 
@@ -89,7 +92,7 @@ public class ChatbotService {
                 userPrompt = buildUserPromptSinContexto(message);
             }
 
-            // 5) Crear JSON de la petición a Groq usando Jackson
+            // 5) Crear JSON de la petición a Groq usando Json
             Map<String, Object> requestMap = new HashMap<>();
             requestMap.put("model", "llama-3.1-8b-instant");
 
